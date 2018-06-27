@@ -24,8 +24,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        startLiveVideo()
         createImageRequest()
+        startLiveVideo()
     }
     
     private func createImageRequest() {
@@ -52,7 +52,32 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 self.textView.text = classifications.joined(separator: "\n")
             }
             
-            
+            print(observations)
+        }
+        
+        self.requests.append(request)
+    }
+    
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
+            else {
+                return
+        }
+        
+        var requestOptions:[VNImageOption: Any] = [:]
+        
+        if let camData = CMGetAttachment(sampleBuffer, kCMSampleBufferAttachmentKey_CameraIntrinsicMatrix, nil) {
+            requestOptions = [.cameraIntrinsics : camData]
+        }
+        
+        let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: CGImagePropertyOrientation(rawValue: 6)!, options: requestOptions)
+        
+        do {
+            try imageRequestHandler.perform(self.requests)
+        }
+        catch {
+            print(error)
         }
     }
     
@@ -76,7 +101,4 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
         session.startRunning()
     }
-
-
 }
-
