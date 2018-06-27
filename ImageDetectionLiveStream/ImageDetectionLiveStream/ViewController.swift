@@ -16,12 +16,44 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var textView: UITextView!
     
+    private let incepetionModel = Inceptionv3()
+    private var requests = [VNCoreMLRequest]()
+    
     let session = AVCaptureSession()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         startLiveVideo()
+        createImageRequest()
+    }
+    
+    private func createImageRequest() {
+        guard let model = try? VNCoreMLModel(for: self.incepetionModel.model)
+            else {
+                fatalError("Problem creating a core ml model")
+        }
+        
+        let request = VNCoreMLRequest(model: model) { request, error in
+            if error != nil {
+                return
+            }
+            
+            guard let observations = request.results as? [VNClassificationObservation]
+                else {
+                    return
+            }
+            
+            let classifications = observations.map {
+                observation in "\(observation.identifier) \(observation.confidence * 100.0)"
+            }
+            
+            DispatchQueue.main.async {
+                self.textView.text = classifications.joined(separator: "\n")
+            }
+            
+            
+        }
     }
     
     private func startLiveVideo() {
